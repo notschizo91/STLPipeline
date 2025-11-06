@@ -1,0 +1,31 @@
+{
+  "name": "stl-pipeline",
+  "version": "1.0.0",
+  "description": "Convert PNG images to 3D printable STL files via SVG vectorization and extrusion",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "convert": "node src/cli.js"
+  },
+  "keywords": [
+    "3d-printing",
+    "stl",
+    "svg",
+    "vectorization",
+    "extrusion",
+    "maker.js",
+    "jscad"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@jscad/modeling": "^2.12.0",
+    "@jscad/stl-serializer": "^2.1.13",
+    "makerjs": "^0.17.0",
+    "potrace": "^2.1.8",
+    "sharp": "^0.33.0",
+    "svg-path-parser": "^1.1.0",
+    "commander": "^11.0.0"
+  }
+}

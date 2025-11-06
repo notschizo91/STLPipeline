@@ -1,0 +1,17 @@
+{
+  "svgOptions": {
+    "threshold": 128,
+    "turdSize": 2,
+    "turnPolicy": "minority",
+    "optCurve": true,
+    "optTolerance": 0.2
+  },
+  "extrusionOptions": {
+    "height": 5,
+    "twistAngle": 0,
+    "twistSteps": 1,
+    "scale": 1
+  },
+  "outputDir": "./output",
+  "saveSvgFile": true
+}
