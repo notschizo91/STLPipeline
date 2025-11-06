@@ -4,6 +4,7 @@ package-lock.json
 
 # Output files
 output/
+uploads/
 *.stl
 *.svg
 

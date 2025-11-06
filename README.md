@@ -4,11 +4,14 @@ Convert PNG images to 3D printable STL files through vectorization and extrusion
 
 ## Features
 
+- **🌐 Web Interface**: Beautiful drag-and-drop web UI with real-time parameter adjustment
+- **🔒 Private & Secure**: Password-protected for personal use
 - **PNG → SVG**: Automatic vectorization using potrace
 - **SVG → 3D**: Extrusion with customizable parameters
 - **3D Printing Ready**: Direct STL output for slicers
-- **Batch Processing**: Convert multiple images at once
+- **Batch Processing**: Convert multiple images at once (CLI)
 - **Parameter Control**: Adjust height, threshold, scale, and twist
+- **Docker Ready**: Easy deployment with Docker
 
 ## Pipeline Overview
 
@@ -23,6 +26,41 @@ npm install
 ```
 
 ## Usage
+
+### 🌐 Web Interface (Recommended)
+
+The easiest way to use STL Pipeline is through the web interface:
+
+1. **Start the server**:
+```bash
+npm run server
+```
+
+2. **Open in browser**: `http://localhost:3000`
+
+3. **Login** with password (default: `stl-admin-2024` - change this!)
+
+4. **Drag & drop** your PNG image
+
+5. **Adjust parameters** with sliders:
+   - Threshold (0-255)
+   - Extrusion Height (mm)
+   - Scale Factor
+   - Twist Angle
+
+6. **Click "Convert to STL"** and download your files!
+
+**🔒 Security**: Change the default password in `.env` file:
+```bash
+cp .env.example .env
+nano .env  # Set APP_PASSWORD=your-secret-password
+```
+
+**🚀 Deployment**: See [DEPLOYMENT.md](DEPLOYMENT.md) for options:
+- Run locally
+- Deploy with Docker
+- Host on Railway/Render (free tiers available)
+- Self-host on DigitalOcean/home server
 
 ### Command Line Interface
 
@@ -97,9 +135,17 @@ STLPipeline/
 │   ├── pngToSvg.js     # PNG → SVG conversion
 │   ├── svgTo3d.js      # SVG → 3D extrusion
 │   └── cli.js          # Command line interface
+├── server/
+│   ├── app.js          # Express web server
+│   └── public/         # Web interface files
+│       ├── index.html  # Main UI
+│       ├── style.css   # Styling
+│       └── app.js      # Frontend JavaScript
 ├── examples/           # Example input images
-├── output/            # Generated SVG/STL files
-└── package.json
+├── output/             # Generated SVG/STL files
+├── Dockerfile          # Docker configuration
+├── docker-compose.yml  # Docker Compose setup
+└── DEPLOYMENT.md       # Deployment guide
 ```
 
 ## How It Works
@@ -135,12 +181,13 @@ STLPipeline/
 
 ## Future Enhancements
 
+- [x] Web interface for parameter preview ✅
 - [ ] Better Bezier curve handling in SVG parsing
 - [ ] Multi-layer support for relief effects
 - [ ] Maker.js integration for advanced 2D operations
 - [ ] Boolean operations (combine multiple shapes)
-- [ ] Web interface for parameter preview
 - [ ] Support for color-based depth mapping
+- [ ] Real-time 3D preview in browser
 
 ## License
 

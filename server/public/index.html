@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STL Pipeline - PNG to 3D</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h2>🔒 Enter Password</h2>
+            <p>This is a private instance</p>
+            <form id="loginForm">
+                <input type="password" id="passwordInput" placeholder="Enter password" required>
+                <button type="submit">Login</button>
+            </form>
+            <div id="loginError" class="error"></div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" style="display: none;">
+        <header>
+            <h1>🖼️ → 🔲 STL Pipeline</h1>
+            <p>Convert PNG images to 3D printable STL files</p>
+            <button id="logoutBtn" class="logout-btn">Logout</button>
+        </header>
+
+        <main>
+            <div class="container">
+                <!-- Upload Section -->
+                <div class="upload-section">
+                    <div id="dropZone" class="drop-zone">
+                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                        </svg>
+                        <p class="drop-text">Drag & drop your PNG here</p>
+                        <p class="drop-subtext">or click to browse</p>
+                        <input type="file" id="fileInput" accept="image/*" hidden>
+                    </div>
+
+                    <div id="preview" class="preview" style="display: none;">
+                        <img id="previewImage" alt="Preview">
+                        <button id="removeImage" class="btn-secondary">Remove</button>
+                    </div>
+                </div>
+
+                <!-- Parameters Section -->
+                <div class="parameters-section">
+                    <h3>⚙️ Parameters</h3>
+
+                    <div class="param-group">
+                        <label for="threshold">
+                            Threshold (0-255)
+                            <span class="param-value" id="thresholdValue">128</span>
+                        </label>
+                        <input type="range" id="threshold" min="0" max="255" value="128">
+                        <small>Lower = more black areas</small>
+                    </div>
+
+                    <div class="param-group">
+                        <label for="height">
+                            Extrusion Height (mm)
+                            <span class="param-value" id="heightValue">5</span>
+                        </label>
+                        <input type="range" id="height" min="1" max="50" value="5" step="0.5">
+                        <small>How tall the 3D object will be</small>
+                    </div>
+
+                    <div class="param-group">
+                        <label for="scale">
+                            Scale Factor
+                            <span class="param-value" id="scaleValue">1.0</span>
+                        </label>
+                        <input type="range" id="scale" min="0.1" max="5" value="1" step="0.1">
+                        <small>Size multiplier</small>
+                    </div>
+
+                    <div class="param-group">
+                        <label for="twist">
+                            Twist Angle (degrees)
+                            <span class="param-value" id="twistValue">0</span>
+                        </label>
+                        <input type="range" id="twist" min="0" max="360" value="0" step="5">
+                        <small>Spiral twist effect</small>
+                    </div>
+
+                    <div class="param-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="saveSvg" checked>
+                            Save intermediate SVG file
+                        </label>
+                    </div>
+
+                    <button id="convertBtn" class="btn-primary" disabled>
+                        Convert to STL
+                    </button>
+                </div>
+
+                <!-- Results Section -->
+                <div id="results" class="results-section" style="display: none;">
+                    <h3>✅ Conversion Complete!</h3>
+                    <div class="result-files">
+                        <div class="file-download" id="svgDownload" style="display: none;">
+                            <span class="file-icon">📄</span>
+                            <div class="file-info">
+                                <strong>SVG File</strong>
+                                <small>Vector version</small>
+                            </div>
+                            <a id="svgLink" class="btn-download" download>Download</a>
+                        </div>
+                        <div class="file-download">
+                            <span class="file-icon">🔲</span>
+                            <div class="file-info">
+                                <strong>STL File</strong>
+                                <small>Ready for 3D printing</small>
+                            </div>
+                            <a id="stlLink" class="btn-download" download>Download</a>
+                        </div>
+                    </div>
+                    <button id="convertAnother" class="btn-secondary">Convert Another</button>
+                </div>
+
+                <!-- Loading Overlay -->
+                <div id="loading" class="loading-overlay" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Converting your image...</p>
+                    <small id="loadingStep">Step 1/3: Vectorizing image</small>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Private STL Pipeline Instance | PNG → SVG → 3D → STL</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  stl-pipeline:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - APP_PASSWORD=${APP_PASSWORD:-stl-admin-2024}
+      - SESSION_SECRET=${SESSION_SECRET:-change-this-secret-key}
+    volumes:
+      - ./output:/app/output
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+    container_name: stl-pipeline
