@@ -53,7 +53,32 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/output', express.static(path.join(__dirname, '../output')));
 
+// Counter system
+const counterFile = path.join(__dirname, '../counter.json');
+
+async function getCounter() {
+  try {
+    const data = await fs.readFile(counterFile, 'utf-8');
+    return JSON.parse(data).count || 0;
+  } catch (error) {
+    return 0;
+  }
+}
+
+async function incrementCounter() {
+  const count = await getCounter();
+  const newCount = count + 1;
+  await fs.writeFile(counterFile, JSON.stringify({ count: newCount }), 'utf-8');
+  return newCount;
+}
+
 // Routes
+
+// Get counter
+app.get('/api/counter', async (req, res) => {
+  const count = await getCounter();
+  res.json({ count });
+});
 
 // Convert endpoint
 app.post('/api/convert', upload.single('image'), async (req, res) => {
@@ -92,13 +117,18 @@ app.post('/api/convert', upload.single('image'), async (req, res) => {
     const stlFilename = path.basename(result.stl);
     const svgFilename = result.svg ? path.basename(result.svg) : null;
 
+    // Increment counter for successful conversion
+    const newCount = await incrementCounter();
+    console.log(`Conversion count: ${newCount}`);
+
     res.json({
       success: true,
       message: 'Conversion successful',
       files: {
         stl: `/output/${stlFilename}`,
         svg: svgFilename ? `/output/${svgFilename}` : null
-      }
+      },
+      count: newCount
     });
 
   } catch (error) {

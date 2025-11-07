@@ -118,33 +118,56 @@ body {
 /* Top Bar */
 .top-bar {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     padding: 1.5rem 3rem;
     background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(10px);
     border-bottom: 2px solid var(--border);
-    height: 80px;
+    height: 100px;
     flex-shrink: 0;
+    position: relative;
 }
 
 .logo {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.5rem;
 }
 
 .logo-image {
-    height: 50px;
+    height: 70px;
     width: auto;
     object-fit: contain;
 }
 
 .logo-subtitle {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: var(--text);
     opacity: 0.9;
+}
+
+.usage-counter {
+    position: absolute;
+    right: 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.counter-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.counter-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
 }
 
 .top-actions {

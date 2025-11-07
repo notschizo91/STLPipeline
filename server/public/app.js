@@ -14,6 +14,7 @@ const convertBtn = document.getElementById('convertBtn');
 const loading = document.getElementById('loading');
 const downloadBtn = document.getElementById('downloadBtn');
 const livePreview = document.getElementById('livePreview');
+const counterValue = document.getElementById('counterValue');
 
 // Parameter elements
 const colorModeToggle = document.getElementById('colorModeToggle');
@@ -23,6 +24,24 @@ const smoothness = document.getElementById('smoothness');
 const smoothnessValue = document.getElementById('smoothnessValue');
 const contrast = document.getElementById('contrast');
 const contrastValue = document.getElementById('contrastValue');
+
+// Fetch and display counter on page load
+async function fetchCounter() {
+    try {
+        const response = await fetch('/api/counter');
+        const data = await response.json();
+        counterValue.textContent = data.count.toLocaleString();
+    } catch (error) {
+        console.error('Failed to fetch counter:', error);
+    }
+}
+
+function updateCounter(count) {
+    counterValue.textContent = count.toLocaleString();
+}
+
+// Load counter on startup
+fetchCounter();
 
 // File upload handlers
 dropZone.addEventListener('click', () => fileInput.click());
@@ -103,6 +122,11 @@ async function updateLivePreview() {
         if (response.ok && data.files.svg) {
             // Store the SVG URL for download
             lastConvertedSvgUrl = data.files.svg;
+
+            // Update counter if provided
+            if (data.count) {
+                updateCounter(data.count);
+            }
 
             // Fetch and display the SVG
             const svgResponse = await fetch(data.files.svg);
