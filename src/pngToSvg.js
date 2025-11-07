@@ -18,30 +18,22 @@ export async function pngToSvg(inputPath, options = {}) {
   } = options;
 
   try {
-    console.log('Converting image to SVG with color preservation');
+    console.log('Converting image to SVG with enhanced color detection');
 
     // Get image metadata
     const metadata = await sharp(inputPath).metadata();
     const width = metadata.width;
     const height = metadata.height;
 
-    // Use a simpler approach: trace 3-4 color layers based on brightness levels
-    const layers = [];
-    const colorLevels = [
-      { threshold: 50, name: 'dark' },
-      { threshold: 120, name: 'medium' },
-      { threshold: 180, name: 'light' }
-    ];
-
     // Sample colors from the original image
     const { data } = await sharp(inputPath)
       .ensureAlpha()
-      .resize(Math.min(width, 100), Math.min(height, 100), { fit: 'inside' }) // Sample smaller version
+      .resize(Math.min(width, 200), Math.min(height, 200), { fit: 'inside' }) // Larger sample for better detection
       .raw()
       .toBuffer({ resolveWithObject: true });
 
-    // Find dominant color for each brightness level
-    const colorSamples = { dark: [], medium: [], light: [] };
+    // Detect distinct colors by quantizing to reduce palette
+    const colorMap = new Map();
 
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i];
@@ -51,55 +43,76 @@ export async function pngToSvg(inputPath, options = {}) {
 
       if (a < 128) continue; // Skip transparent
 
-      const brightness = (r + g + b) / 3;
+      // Quantize to nearest 16 (more colors than before for better detection)
+      const qr = Math.round(r / 16) * 16;
+      const qg = Math.round(g / 16) * 16;
+      const qb = Math.round(b / 16) * 16;
 
-      if (brightness < 85) {
-        colorSamples.dark.push({ r, g, b });
-      } else if (brightness < 170) {
-        colorSamples.medium.push({ r, g, b });
-      } else {
-        colorSamples.light.push({ r, g, b });
-      }
+      const colorKey = `${qr},${qg},${qb}`;
+      const count = colorMap.get(colorKey) || 0;
+      colorMap.set(colorKey, count + 1);
     }
 
-    // Get average color for each level
-    const avgColors = {};
-    for (const level of ['dark', 'medium', 'light']) {
-      if (colorSamples[level].length > 0) {
-        const avg = colorSamples[level].reduce((acc, c) => ({
-          r: acc.r + c.r,
-          g: acc.g + c.g,
-          b: acc.b + c.b
-        }), { r: 0, g: 0, b: 0 });
+    // Sort colors by frequency and take top 6 colors
+    const topColors = Array.from(colorMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([color, count]) => {
+        const [r, g, b] = color.split(',').map(Number);
+        const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        return { r, g, b, hex, count };
+      });
 
-        avgColors[level] = {
-          r: Math.round(avg.r / colorSamples[level].length),
-          g: Math.round(avg.g / colorSamples[level].length),
-          b: Math.round(avg.b / colorSamples[level].length)
-        };
+    console.log(`Detected ${topColors.length} colors:`, topColors.map(c => c.hex));
+
+    // Get full resolution image data for masking
+    const fullData = await sharp(inputPath)
+      .ensureAlpha()
+      .raw()
+      .toBuffer();
+
+    const layers = [];
+
+    // Trace each color separately
+    for (const targetColor of topColors) {
+      console.log(`Tracing color ${targetColor.hex}...`);
+
+      // Create a mask for this specific color
+      const maskBuffer = Buffer.alloc(width * height);
+
+      for (let i = 0, j = 0; i < fullData.length; i += 4, j++) {
+        const r = fullData[i];
+        const g = fullData[i + 1];
+        const b = fullData[i + 2];
+        const a = fullData[i + 3];
+
+        // Quantize pixel color
+        const qr = Math.round(r / 16) * 16;
+        const qg = Math.round(g / 16) * 16;
+        const qb = Math.round(b / 16) * 16;
+
+        // If pixel matches this color, mark as black (will be traced)
+        if (a >= 128 && qr === targetColor.r && qg === targetColor.g && qb === targetColor.b) {
+          maskBuffer[j] = 0; // Black = trace this
+        } else {
+          maskBuffer[j] = 255; // White = ignore
+        }
       }
-    }
 
-    // Trace each brightness level with its average color
-    for (const level of colorLevels) {
-      if (!avgColors[level.name]) continue;
-
-      const color = avgColors[level.name];
-      const hexColor = `#${color.r.toString(16).padStart(2, '0')}${color.g.toString(16).padStart(2, '0')}${color.b.toString(16).padStart(2, '0')}`;
-
-      const imageBuffer = await sharp(inputPath)
-        .greyscale()
-        .toBuffer();
+      // Convert mask to image
+      const maskImage = await sharp(maskBuffer, {
+        raw: { width, height, channels: 1 }
+      }).toBuffer();
 
       try {
         const svgStr = await new Promise((resolve, reject) => {
-          potrace.trace(imageBuffer, {
-            threshold: level.threshold,
-            turdSize,
+          potrace.trace(maskImage, {
+            threshold: 128,
+            turdSize, // Use user's detail setting
             turnPolicy: potrace.Potrace.TURNPOLICY_MINORITY,
             optCurve,
             optTolerance,
-            color: hexColor,
+            color: targetColor.hex,
             background: 'transparent'
           }, (err, svg) => {
             if (err) reject(err);
@@ -111,10 +124,11 @@ export async function pngToSvg(inputPath, options = {}) {
         const pathRegex = /<path[^>]*>/g;
         const paths = svgStr.match(pathRegex);
         if (paths && paths.length > 0) {
-          layers.push({ paths, color: hexColor });
+          layers.push({ paths, color: targetColor.hex });
+          console.log(`  Found ${paths.length} paths for ${targetColor.hex}`);
         }
       } catch (err) {
-        console.error(`Failed to trace level ${level.name}:`, err.message);
+        console.error(`Failed to trace color ${targetColor.hex}:`, err.message);
       }
     }
 
