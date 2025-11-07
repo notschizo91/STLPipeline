@@ -15,10 +15,10 @@ const fileInput = document.getElementById('fileInput');
 const preview = document.getElementById('preview');
 const previewImage = document.getElementById('previewImage');
 const removeImageBtn = document.getElementById('removeImage');
-
 const convertBtn = document.getElementById('convertBtn');
+
 const loading = document.getElementById('loading');
-const results = document.getElementById('results');
+const downloadBtn = document.getElementById('downloadBtn');
 
 // Parameter elements
 const detail = document.getElementById('detail');
@@ -27,10 +27,6 @@ const smoothness = document.getElementById('smoothness');
 const smoothnessValue = document.getElementById('smoothnessValue');
 const contrast = document.getElementById('contrast');
 const contrastValue = document.getElementById('contrastValue');
-
-// Result elements
-const svgLink = document.getElementById('svgLink');
-const convertAnother = document.getElementById('convertAnother');
 
 // Check authentication on load
 checkAuthStatus();
@@ -119,12 +115,7 @@ fileInput.addEventListener('change', (e) => {
 });
 
 removeImageBtn.addEventListener('click', () => {
-    selectedFile = null;
-    fileInput.value = '';
-    preview.style.display = 'none';
-    dropZone.style.display = 'block';
-    convertBtn.disabled = true;
-    results.style.display = 'none';
+    resetForm();
 });
 
 function handleFileSelect(file) {
@@ -140,8 +131,6 @@ function handleFileSelect(file) {
         previewImage.src = e.target.result;
         dropZone.style.display = 'none';
         preview.style.display = 'block';
-        convertBtn.disabled = false;
-        results.style.display = 'none';
     };
     reader.readAsDataURL(file);
 }
@@ -164,14 +153,9 @@ contrast.addEventListener('input', (e) => {
 
 // Map simple sliders to technical parameters
 function getConversionParams() {
-    // Detail: 1=low, 2=medium, 3=high
-    const turdSizeMap = { 1: 5, 2: 2, 3: 1 }; // Low detail = more noise suppression
-
-    // Smoothness: 1=sharp, 2=medium, 3=smooth
-    const toleranceMap = { 1: 0.1, 2: 0.2, 3: 0.4 }; // Higher = smoother curves
-
-    // Contrast: 1-5 (dark to light)
-    const thresholdMap = { 1: 64, 2: 96, 3: 128, 4: 160, 5: 192 }; // Lower = more black
+    const turdSizeMap = { 1: 5, 2: 2, 3: 1 };
+    const toleranceMap = { 1: 0.1, 2: 0.2, 3: 0.4 };
+    const thresholdMap = { 1: 64, 2: 96, 3: 128, 4: 160, 5: 192 };
 
     return {
         threshold: thresholdMap[parseInt(contrast.value)],
@@ -193,14 +177,12 @@ convertBtn.addEventListener('click', async () => {
     formData.append('optCurve', 'true');
     formData.append('optTolerance', params.optTolerance);
     formData.append('saveSvg', 'true');
-    // Dummy 3D params (backend still needs them)
     formData.append('height', '1');
     formData.append('scale', '1');
     formData.append('twistAngle', '0');
 
     // Show loading overlay
     loading.style.display = 'flex';
-    convertBtn.disabled = true;
 
     const progressFill = document.getElementById('progressFill');
     const stepText = document.getElementById('stepText');
@@ -249,16 +231,18 @@ convertBtn.addEventListener('click', async () => {
                 loading.style.display = 'none';
                 successOverlay.style.display = 'flex';
 
-                // Hide success overlay and show results after animation
+                // Set up download button
+                downloadBtn.href = data.files.svg;
+                downloadBtn.download = data.files.svg.split('/').pop();
+
+                // Hide success overlay and show glowing download button
                 setTimeout(() => {
                     successOverlay.style.display = 'none';
-                    results.style.display = 'block';
 
-                    svgLink.href = data.files.svg;
-                    svgLink.download = data.files.svg.split('/').pop();
-
-                    // Scroll to results
-                    results.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Show and illuminate the download button
+                    downloadBtn.style.display = 'inline-flex';
+                    downloadBtn.classList.remove('glow-hidden');
+                    downloadBtn.classList.add('glow-active');
                 }, 2000);
             }, 500);
 
@@ -268,15 +252,8 @@ convertBtn.addEventListener('click', async () => {
     } catch (error) {
         loading.style.display = 'none';
         alert('Conversion failed: ' + error.message);
-        convertBtn.disabled = false;
-        // Reset progress
         progressFill.style.width = '0%';
     }
-});
-
-// Convert another handler
-convertAnother.addEventListener('click', () => {
-    resetForm();
 });
 
 function resetForm() {
@@ -284,9 +261,14 @@ function resetForm() {
     fileInput.value = '';
     preview.style.display = 'none';
     dropZone.style.display = 'block';
-    convertBtn.disabled = true;
-    results.style.display = 'none';
     loading.style.display = 'none';
+
+    // Hide and reset download button
+    downloadBtn.classList.remove('glow-active');
+    downloadBtn.classList.add('glow-hidden');
+    setTimeout(() => {
+        downloadBtn.style.display = 'none';
+    }, 300);
 
     // Reset progress bar
     const progressFill = document.getElementById('progressFill');
