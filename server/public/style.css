@@ -128,11 +128,23 @@ body {
     flex-shrink: 0;
 }
 
-.logo h1 {
-    font-size: 1.75rem;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logo-image {
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+}
+
+.logo-subtitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text);
+    opacity: 0.9;
 }
 
 .top-actions {
