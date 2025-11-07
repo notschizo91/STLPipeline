@@ -43,6 +43,21 @@ function updateCounter(count) {
 // Load counter on startup
 fetchCounter();
 
+// Download button handler - tracks downloads
+downloadBtn.addEventListener('click', async () => {
+    try {
+        const response = await fetch('/api/track-download', {
+            method: 'POST'
+        });
+        const data = await response.json();
+        if (data.count) {
+            updateCounter(data.count);
+        }
+    } catch (error) {
+        console.error('Failed to track download:', error);
+    }
+});
+
 // File upload handlers
 dropZone.addEventListener('click', () => fileInput.click());
 
@@ -123,11 +138,6 @@ async function updateLivePreview() {
             // Store the SVG URL for download
             lastConvertedSvgUrl = data.files.svg;
 
-            // Update counter if provided
-            if (data.count) {
-                updateCounter(data.count);
-            }
-
             // Fetch and display the SVG
             const svgResponse = await fetch(data.files.svg);
             const svgText = await svgResponse.text();
@@ -152,20 +162,32 @@ function debouncedLivePreview() {
 
 // Parameter updates with labels
 detail.addEventListener('input', (e) => {
-    const labels = ['Low', 'Medium', 'High'];
-    detailValue.textContent = labels[e.target.value - 1];
+    const value = parseInt(e.target.value);
+    let label;
+    if (value <= 3) label = 'Low';
+    else if (value <= 7) label = 'Medium';
+    else label = 'High';
+    detailValue.textContent = label;
     debouncedLivePreview();
 });
 
 smoothness.addEventListener('input', (e) => {
-    const labels = ['Sharp', 'Medium', 'Smooth'];
-    smoothnessValue.textContent = labels[e.target.value - 1];
+    const value = parseInt(e.target.value);
+    let label;
+    if (value <= 3) label = 'Sharp';
+    else if (value <= 7) label = 'Medium';
+    else label = 'Smooth';
+    smoothnessValue.textContent = label;
     debouncedLivePreview();
 });
 
 contrast.addEventListener('input', (e) => {
-    const labels = ['Very Dark', 'Dark', 'Balanced', 'Light', 'Very Light'];
-    contrastValue.textContent = labels[e.target.value - 1];
+    const value = parseInt(e.target.value);
+    let label;
+    if (value <= 3) label = 'Dark';
+    else if (value <= 7) label = 'Medium';
+    else label = 'Light';
+    contrastValue.textContent = label;
     debouncedLivePreview();
 });
 
@@ -186,14 +208,32 @@ colorModeToggle.addEventListener('change', () => {
 
 // Map simple sliders to technical parameters
 function getConversionParams() {
-    const turdSizeMap = { 1: 5, 2: 2, 3: 1 };
-    const toleranceMap = { 1: 0.1, 2: 0.2, 3: 0.4 };
-    const thresholdMap = { 1: 64, 2: 96, 3: 128, 4: 160, 5: 192 };
+    const detailValue = parseInt(detail.value);
+    const smoothnessValue = parseInt(smoothness.value);
+    const contrastValue = parseInt(contrast.value);
+
+    // Map detail (1-10) to turdSize (5 to 1)
+    // Lower values = less detail (larger turdSize), Higher values = more detail (smaller turdSize)
+    let turdSize;
+    if (detailValue <= 3) turdSize = 5;
+    else if (detailValue <= 7) turdSize = 2;
+    else turdSize = 1;
+
+    // Map smoothness (1-10) to optTolerance (0.1 to 0.4)
+    // Lower values = sharper (less tolerance), Higher values = smoother (more tolerance)
+    let optTolerance;
+    if (smoothnessValue <= 3) optTolerance = 0.1;
+    else if (smoothnessValue <= 7) optTolerance = 0.2;
+    else optTolerance = 0.4;
+
+    // Map contrast (1-10) to threshold (64 to 192)
+    // Lower values = darker, Higher values = lighter
+    const threshold = Math.round(64 + (contrastValue - 1) * (192 - 64) / 9);
 
     return {
-        threshold: thresholdMap[parseInt(contrast.value)],
-        turdSize: turdSizeMap[parseInt(detail.value)],
-        optTolerance: toleranceMap[parseInt(smoothness.value)]
+        threshold,
+        turdSize,
+        optTolerance
     };
 }
 
@@ -253,10 +293,10 @@ function resetForm() {
     if (progressFill) progressFill.style.width = '0%';
 
     // Reset parameters to defaults
-    detail.value = 2;
+    detail.value = 5;
     detailValue.textContent = 'Medium';
-    smoothness.value = 2;
+    smoothness.value = 5;
     smoothnessValue.textContent = 'Medium';
-    contrast.value = 3;
-    contrastValue.textContent = 'Balanced';
+    contrast.value = 5;
+    contrastValue.textContent = 'Medium';
 }

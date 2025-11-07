@@ -80,6 +80,13 @@ app.get('/api/counter', async (req, res) => {
   res.json({ count });
 });
 
+// Track download (increments counter)
+app.post('/api/track-download', async (req, res) => {
+  const newCount = await incrementCounter();
+  console.log(`Download tracked. Total conversions: ${newCount}`);
+  res.json({ count: newCount });
+});
+
 // Convert endpoint
 app.post('/api/convert', upload.single('image'), async (req, res) => {
   try {
@@ -117,18 +124,13 @@ app.post('/api/convert', upload.single('image'), async (req, res) => {
     const stlFilename = path.basename(result.stl);
     const svgFilename = result.svg ? path.basename(result.svg) : null;
 
-    // Increment counter for successful conversion
-    const newCount = await incrementCounter();
-    console.log(`Conversion count: ${newCount}`);
-
     res.json({
       success: true,
       message: 'Conversion successful',
       files: {
         stl: `/output/${stlFilename}`,
         svg: svgFilename ? `/output/${svgFilename}` : null
-      },
-      count: newCount
+      }
     });
 
   } catch (error) {
