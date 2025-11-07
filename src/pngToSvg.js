@@ -1,6 +1,5 @@
 import potrace from 'potrace';
 import sharp from 'sharp';
-import ImageTracer from 'imagetracerjs';
 import { promises as fs } from 'fs';
 
 /**
@@ -21,28 +20,49 @@ export async function pngToSvg(inputPath, options = {}) {
 
   try {
     if (colorMode) {
-      // Color mode: Use ImageTracer for full color SVG conversion
-      console.log('Using color mode conversion with ImageTracer');
+      // Color mode: Use potrace with posterized color layers
+      console.log('Using color mode conversion with multi-layer potrace');
 
-      const svgContent = await new Promise((resolve, reject) => {
-        ImageTracer.imageToSVG(
-          inputPath,
-          (svgstr) => {
-            resolve(svgstr);
-          },
-          {
-            numberofcolors: 16,
-            mincolorratio: 0.02,
-            colorquantcycles: 3,
-            ltres: 1,
-            qtres: 1,
-            pathomit: 8,
-            rightangleenhance: true
-          }
-        );
-      });
+      const layers = [];
+      const colors = ['#000000', '#555555', '#999999', '#CCCCCC'];
 
-      return svgContent;
+      // Process image through multiple threshold levels to create color effect
+      for (let i = 0; i < 4; i++) {
+        const layerThreshold = 64 + (i * 48); // 64, 112, 160, 208
+
+        const imageBuffer = await sharp(inputPath)
+          .greyscale()
+          .normalize()
+          .toBuffer();
+
+        const layerSvg = await new Promise((resolve, reject) => {
+          potrace.trace(imageBuffer, {
+            threshold: layerThreshold,
+            turdSize: 1,
+            turnPolicy: potrace.Potrace.TURNPOLICY_MINORITY,
+            optCurve: true,
+            optTolerance: 0.3,
+            color: colors[i],
+            background: 'transparent'
+          }, (err, svg) => {
+            if (err) reject(err);
+            else resolve(svg);
+          });
+        });
+
+        layers.push(layerSvg);
+      }
+
+      // Combine layers by merging SVG contents
+      let combinedSvg = layers[0];
+      for (let i = 1; i < layers.length; i++) {
+        const pathMatch = layers[i].match(/<path[^>]*d="[^"]+"/g);
+        if (pathMatch) {
+          combinedSvg = combinedSvg.replace('</svg>', pathMatch.join('') + '</svg>');
+        }
+      }
+
+      return combinedSvg;
     } else {
       // Black & white mode: Use Potrace for clean B&W conversion
       console.log('Using black & white mode conversion with Potrace');
