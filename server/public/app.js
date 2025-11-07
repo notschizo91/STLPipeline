@@ -21,6 +21,7 @@ const loading = document.getElementById('loading');
 const downloadBtn = document.getElementById('downloadBtn');
 
 // Parameter elements
+const colorModeToggle = document.getElementById('colorModeToggle');
 const detail = document.getElementById('detail');
 const detailValue = document.getElementById('detailValue');
 const smoothness = document.getElementById('smoothness');
@@ -151,6 +152,20 @@ contrast.addEventListener('input', (e) => {
     contrastValue.textContent = labels[e.target.value - 1];
 });
 
+// Color mode toggle handler
+colorModeToggle.addEventListener('change', () => {
+    const labels = document.querySelectorAll('.mode-label');
+    if (colorModeToggle.checked) {
+        // Color mode active
+        labels[0].style.color = 'var(--text-secondary)';
+        labels[1].style.color = 'var(--primary)';
+    } else {
+        // B&W mode active
+        labels[0].style.color = 'var(--primary)';
+        labels[1].style.color = 'var(--text-secondary)';
+    }
+});
+
 // Map simple sliders to technical parameters
 function getConversionParams() {
     const turdSizeMap = { 1: 5, 2: 2, 3: 1 };
@@ -172,6 +187,7 @@ convertBtn.addEventListener('click', async () => {
 
     const formData = new FormData();
     formData.append('image', selectedFile);
+    formData.append('colorMode', colorModeToggle.checked ? 'true' : 'false');
     formData.append('threshold', params.threshold);
     formData.append('turdSize', params.turdSize);
     formData.append('optCurve', 'true');

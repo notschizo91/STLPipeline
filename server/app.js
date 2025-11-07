@@ -112,6 +112,7 @@ app.post('/api/convert', requireAuth, upload.single('image'), async (req, res) =
       outputDir: path.join(__dirname, '../output'),
       saveSvgFile: req.body.saveSvg !== 'false',
       svgOptions: {
+        colorMode: req.body.colorMode === 'true',
         threshold: parseInt(req.body.threshold) || 128,
         turdSize: parseInt(req.body.turdSize) || 2,
         optCurve: req.body.optCurve !== 'false',
