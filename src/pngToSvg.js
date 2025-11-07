@@ -168,9 +168,11 @@ export async function pngToSvg(inputPath, options = {}) {
       });
     });
 
+    // Use processWidth/processHeight for viewBox since paths are in that coordinate system
+    // But set width/height to original dimensions so it displays at proper size
     const combinedSvg = `<?xml version="1.0" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
-<svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${processWidth} ${processHeight}">
 ${combinedPaths}</svg>`;
 
     return combinedSvg;
