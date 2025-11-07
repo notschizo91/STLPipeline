@@ -216,14 +216,19 @@ body {
     text-align: center;
     cursor: pointer;
     transition: all 0.3s;
-    background: rgba(30, 41, 59, 0.5);
+    background: rgba(248, 250, 252, 0.95);
     min-width: 500px;
     max-width: 600px;
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .drop-zone-center:hover, .drop-zone-center.drag-over {
     border-color: var(--primary);
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(99, 102, 241, 0.15);
     transform: scale(1.02);
 }
 
@@ -265,6 +270,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    min-height: 400px;
 }
 
 .preview-label {
@@ -276,21 +282,30 @@ body {
     margin: 0;
 }
 
-.preview-center img {
-    max-width: 100%;
-    max-height: 45vh;
+.preview-image-container {
+    height: 400px;
     border-radius: 1rem;
     border: 2px solid var(--border);
+    background: rgba(248, 250, 252, 0.95);
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+.preview-center img {
+    max-width: 100%;
+    max-height: 100%;
     object-fit: contain;
 }
 
 .live-preview-container {
-    min-height: 300px;
-    max-height: 45vh;
+    height: 400px;
     border-radius: 1rem;
     border: 2px solid var(--border);
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(248, 250, 252, 0.95);
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     display: flex;
     align-items: center;
@@ -306,7 +321,7 @@ body {
 }
 
 .preview-placeholder {
-    color: var(--text-secondary);
+    color: #64748b;
     font-size: 1rem;
     display: flex;
     align-items: center;
@@ -317,6 +332,7 @@ body {
 .preview-loading {
     color: var(--primary);
     font-size: 1rem;
+    font-weight: 600;
 }
 
 .preview-actions {
