@@ -25,82 +25,81 @@ export async function pngToSvg(inputPath, options = {}) {
     const width = metadata.width;
     const height = metadata.height;
 
-    // Get the raw pixel data
-    const { data, info } = await sharp(inputPath)
+    // Use a simpler approach: trace 3-4 color layers based on brightness levels
+    const layers = [];
+    const colorLevels = [
+      { threshold: 50, name: 'dark' },
+      { threshold: 120, name: 'medium' },
+      { threshold: 180, name: 'light' }
+    ];
+
+    // Sample colors from the original image
+    const { data } = await sharp(inputPath)
       .ensureAlpha()
+      .resize(Math.min(width, 100), Math.min(height, 100), { fit: 'inside' }) // Sample smaller version
       .raw()
       .toBuffer({ resolveWithObject: true });
 
-    // Analyze image to find dominant colors
-    const colorMap = new Map();
+    // Find dominant color for each brightness level
+    const colorSamples = { dark: [], medium: [], light: [] };
+
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
       const a = data[i + 3];
 
-      // Skip fully transparent pixels
-      if (a < 128) continue;
+      if (a < 128) continue; // Skip transparent
 
-      // Quantize colors to reduce palette (round to nearest 32)
-      const qr = Math.round(r / 32) * 32;
-      const qg = Math.round(g / 32) * 32;
-      const qb = Math.round(b / 32) * 32;
+      const brightness = (r + g + b) / 3;
 
-      const colorKey = `${qr},${qg},${qb}`;
-      colorMap.set(colorKey, (colorMap.get(colorKey) || 0) + 1);
+      if (brightness < 85) {
+        colorSamples.dark.push({ r, g, b });
+      } else if (brightness < 170) {
+        colorSamples.medium.push({ r, g, b });
+      } else {
+        colorSamples.light.push({ r, g, b });
+      }
     }
 
-    // Sort colors by frequency and take top colors
-    const sortedColors = Array.from(colorMap.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8) // Limit to 8 colors max
-      .map(([color]) => {
-        const [r, g, b] = color.split(',').map(Number);
-        return { r, g, b, hex: `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}` };
-      });
+    // Get average color for each level
+    const avgColors = {};
+    for (const level of ['dark', 'medium', 'light']) {
+      if (colorSamples[level].length > 0) {
+        const avg = colorSamples[level].reduce((acc, c) => ({
+          r: acc.r + c.r,
+          g: acc.g + c.g,
+          b: acc.b + c.b
+        }), { r: 0, g: 0, b: 0 });
 
-    console.log(`Found ${sortedColors.length} dominant colors`);
-
-    // Trace each color layer
-    const layers = [];
-    for (const color of sortedColors) {
-      // Create a binary mask for this color
-      const maskBuffer = Buffer.alloc(width * height);
-
-      for (let i = 0, j = 0; i < data.length; i += 4, j++) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const a = data[i + 3];
-
-        // Check if pixel is close to this color
-        const qr = Math.round(r / 32) * 32;
-        const qg = Math.round(g / 32) * 32;
-        const qb = Math.round(b / 32) * 32;
-
-        if (a >= 128 && qr === color.r && qg === color.g && qb === color.b) {
-          maskBuffer[j] = 0; // Black in mask = this color
-        } else {
-          maskBuffer[j] = 255; // White in mask = not this color
-        }
+        avgColors[level] = {
+          r: Math.round(avg.r / colorSamples[level].length),
+          g: Math.round(avg.g / colorSamples[level].length),
+          b: Math.round(avg.b / colorSamples[level].length)
+        };
       }
+    }
 
-      // Convert mask to image buffer for potrace
-      const maskImage = await sharp(maskBuffer, {
-        raw: { width, height, channels: 1 }
-      }).toBuffer();
+    // Trace each brightness level with its average color
+    for (const level of colorLevels) {
+      if (!avgColors[level.name]) continue;
 
-      // Trace this color layer
+      const color = avgColors[level.name];
+      const hexColor = `#${color.r.toString(16).padStart(2, '0')}${color.g.toString(16).padStart(2, '0')}${color.b.toString(16).padStart(2, '0')}`;
+
+      const imageBuffer = await sharp(inputPath)
+        .greyscale()
+        .toBuffer();
+
       try {
         const svgStr = await new Promise((resolve, reject) => {
-          potrace.trace(maskImage, {
-            threshold: 128,
+          potrace.trace(imageBuffer, {
+            threshold: level.threshold,
             turdSize,
             turnPolicy: potrace.Potrace.TURNPOLICY_MINORITY,
             optCurve,
             optTolerance,
-            color: color.hex,
+            color: hexColor,
             background: 'transparent'
           }, (err, svg) => {
             if (err) reject(err);
@@ -112,16 +111,41 @@ export async function pngToSvg(inputPath, options = {}) {
         const pathRegex = /<path[^>]*>/g;
         const paths = svgStr.match(pathRegex);
         if (paths && paths.length > 0) {
-          layers.push({ paths, color: color.hex });
+          layers.push({ paths, color: hexColor });
         }
       } catch (err) {
-        console.error(`Failed to trace color ${color.hex}:`, err.message);
+        console.error(`Failed to trace level ${level.name}:`, err.message);
       }
+    }
+
+    if (layers.length === 0) {
+      // Fallback to simple black trace
+      console.log('No colored layers found, using black fallback');
+      const imageBuffer = await sharp(inputPath)
+        .greyscale()
+        .toBuffer();
+
+      const svgContent = await new Promise((resolve, reject) => {
+        potrace.trace(imageBuffer, {
+          threshold,
+          turdSize,
+          turnPolicy: potrace.Potrace.TURNPOLICY_MINORITY,
+          optCurve,
+          optTolerance,
+          color: '#000000',
+          background: 'transparent'
+        }, (err, svg) => {
+          if (err) reject(err);
+          else resolve(svg);
+        });
+      });
+
+      return svgContent;
     }
 
     // Combine all layers into one SVG
     let combinedPaths = '';
-    layers.forEach(layer => {
+    layers.reverse().forEach(layer => {
       layer.paths.forEach(path => {
         combinedPaths += path + '\n';
       });
@@ -134,6 +158,7 @@ ${combinedPaths}</svg>`;
 
     return combinedSvg;
   } catch (error) {
+    console.error('Error in pngToSvg:', error);
     throw new Error(`Failed to convert PNG to SVG: ${error.message}`);
   }
 }
