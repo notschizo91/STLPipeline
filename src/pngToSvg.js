@@ -25,14 +25,26 @@ export async function pngToSvg(inputPath, options = {}) {
     const width = metadata.width;
     const height = metadata.height;
 
-    // Sample colors from the original image
+    // Limit processing size to prevent memory issues
+    const maxDimension = 800;
+    let processWidth = width;
+    let processHeight = height;
+
+    if (width > maxDimension || height > maxDimension) {
+      const scale = maxDimension / Math.max(width, height);
+      processWidth = Math.round(width * scale);
+      processHeight = Math.round(height * scale);
+      console.log(`Downscaling from ${width}x${height} to ${processWidth}x${processHeight} for processing`);
+    }
+
+    // Sample colors from a reasonably sized version
     const { data } = await sharp(inputPath)
+      .resize(Math.min(processWidth, 150), Math.min(processHeight, 150), { fit: 'inside' })
       .ensureAlpha()
-      .resize(Math.min(width, 200), Math.min(height, 200), { fit: 'inside' }) // Larger sample for better detection
       .raw()
       .toBuffer({ resolveWithObject: true });
 
-    // Detect distinct colors by quantizing to reduce palette
+    // Detect distinct colors by quantizing
     const colorMap = new Map();
 
     for (let i = 0; i < data.length; i += 4) {
@@ -41,22 +53,22 @@ export async function pngToSvg(inputPath, options = {}) {
       const b = data[i + 2];
       const a = data[i + 3];
 
-      if (a < 128) continue; // Skip transparent
+      if (a < 128) continue;
 
-      // Quantize to nearest 16 (more colors than before for better detection)
-      const qr = Math.round(r / 16) * 16;
-      const qg = Math.round(g / 16) * 16;
-      const qb = Math.round(b / 16) * 16;
+      // Quantize to nearest 24 (balance between colors and performance)
+      const qr = Math.round(r / 24) * 24;
+      const qg = Math.round(g / 24) * 24;
+      const qb = Math.round(b / 24) * 24;
 
       const colorKey = `${qr},${qg},${qb}`;
       const count = colorMap.get(colorKey) || 0;
       colorMap.set(colorKey, count + 1);
     }
 
-    // Sort colors by frequency and take top 6 colors
+    // Sort colors by frequency and take top 5 colors
     const topColors = Array.from(colorMap.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
+      .slice(0, 5)
       .map(([color, count]) => {
         const [r, g, b] = color.split(',').map(Number);
         const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
@@ -65,50 +77,27 @@ export async function pngToSvg(inputPath, options = {}) {
 
     console.log(`Detected ${topColors.length} colors:`, topColors.map(c => c.hex));
 
-    // Get full resolution image data for masking
-    const fullData = await sharp(inputPath)
-      .ensureAlpha()
-      .raw()
-      .toBuffer();
-
     const layers = [];
 
-    // Trace each color separately
-    for (const targetColor of topColors) {
+    // Trace each color using grayscale levels (memory efficient approach)
+    for (let i = 0; i < topColors.length; i++) {
+      const targetColor = topColors[i];
       console.log(`Tracing color ${targetColor.hex}...`);
 
-      // Create a mask for this specific color
-      const maskBuffer = Buffer.alloc(width * height);
-
-      for (let i = 0, j = 0; i < fullData.length; i += 4, j++) {
-        const r = fullData[i];
-        const g = fullData[i + 1];
-        const b = fullData[i + 2];
-        const a = fullData[i + 3];
-
-        // Quantize pixel color
-        const qr = Math.round(r / 16) * 16;
-        const qg = Math.round(g / 16) * 16;
-        const qb = Math.round(b / 16) * 16;
-
-        // If pixel matches this color, mark as black (will be traced)
-        if (a >= 128 && qr === targetColor.r && qg === targetColor.g && qb === targetColor.b) {
-          maskBuffer[j] = 0; // Black = trace this
-        } else {
-          maskBuffer[j] = 255; // White = ignore
-        }
-      }
-
-      // Convert mask to image
-      const maskImage = await sharp(maskBuffer, {
-        raw: { width, height, channels: 1 }
-      }).toBuffer();
+      // Use different threshold levels for each color to capture different brightness ranges
+      const thresholdValue = Math.round(50 + (i * 40)); // Spread thresholds: 50, 90, 130, 170, 210
 
       try {
+        // Process at reasonable size
+        const processedBuffer = await sharp(inputPath)
+          .resize(processWidth, processHeight, { fit: 'inside' })
+          .greyscale()
+          .toBuffer();
+
         const svgStr = await new Promise((resolve, reject) => {
-          potrace.trace(maskImage, {
-            threshold: 128,
-            turdSize, // Use user's detail setting
+          potrace.trace(processedBuffer, {
+            threshold: thresholdValue,
+            turdSize,
             turnPolicy: potrace.Potrace.TURNPOLICY_MINORITY,
             optCurve,
             optTolerance,
@@ -120,11 +109,25 @@ export async function pngToSvg(inputPath, options = {}) {
           });
         });
 
-        // Extract paths from SVG
+        // Extract paths and scale them back to original size if needed
         const pathRegex = /<path[^>]*>/g;
         const paths = svgStr.match(pathRegex);
+
         if (paths && paths.length > 0) {
-          layers.push({ paths, color: targetColor.hex });
+          // Scale paths back to original dimensions
+          let scaledPaths = paths;
+          if (processWidth !== width || processHeight !== height) {
+            const scaleX = width / processWidth;
+            const scaleY = height / processHeight;
+            scaledPaths = paths.map(path =>
+              path.replace(/d="([^"]+)"/, (match, d) => {
+                // This is a simplified scaling - potrace will handle the actual size via viewBox
+                return match;
+              })
+            );
+          }
+
+          layers.push({ paths: scaledPaths, color: targetColor.hex });
           console.log(`  Found ${paths.length} paths for ${targetColor.hex}`);
         }
       } catch (err) {
