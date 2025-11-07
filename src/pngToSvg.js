@@ -20,11 +20,15 @@ export async function pngToSvg(inputPath, options = {}) {
 
   try {
     if (colorMode) {
-      // Color mode: Use potrace with black lines to preserve white and details
-      console.log('Using color mode conversion with black line tracing');
+      // Color mode: Only vectorize BLACK areas, preserve white and light areas
+      console.log('Using color mode conversion - only tracing black areas');
+
+      // Use high threshold to only capture very dark (black) pixels
+      // This ensures only black areas are vectorized, everything else stays transparent
+      const colorThreshold = Math.max(threshold, 200); // Ensure threshold is at least 200 for black-only tracing
 
       const defaultOptions = {
-        threshold,
+        threshold: colorThreshold,
         turdSize,
         turnPolicy: potrace.Potrace.TURNPOLICY_MINORITY,
         optCurve,
@@ -34,12 +38,12 @@ export async function pngToSvg(inputPath, options = {}) {
         ...otherOptions
       };
 
-      // Read and process the image with sharp (keep original colors, just convert format)
+      // Read and process the image with sharp
       const imageBuffer = await sharp(inputPath)
         .greyscale()
         .toBuffer();
 
-      // Convert to SVG using potrace with black lines
+      // Convert to SVG using potrace - only black areas will be traced
       const svgContent = await new Promise((resolve, reject) => {
         potrace.trace(imageBuffer, defaultOptions, (err, svg) => {
           if (err) reject(err);
