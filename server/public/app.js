@@ -18,24 +18,18 @@ const removeImageBtn = document.getElementById('removeImage');
 
 const convertBtn = document.getElementById('convertBtn');
 const loading = document.getElementById('loading');
-const loadingStep = document.getElementById('loadingStep');
 const results = document.getElementById('results');
 
 // Parameter elements
-const threshold = document.getElementById('threshold');
-const thresholdValue = document.getElementById('thresholdValue');
-const height = document.getElementById('height');
-const heightValue = document.getElementById('heightValue');
-const scale = document.getElementById('scale');
-const scaleValue = document.getElementById('scaleValue');
-const twist = document.getElementById('twist');
-const twistValue = document.getElementById('twistValue');
-const saveSvg = document.getElementById('saveSvg');
+const detail = document.getElementById('detail');
+const detailValue = document.getElementById('detailValue');
+const smoothness = document.getElementById('smoothness');
+const smoothnessValue = document.getElementById('smoothnessValue');
+const contrast = document.getElementById('contrast');
+const contrastValue = document.getElementById('contrastValue');
 
 // Result elements
-const svgDownload = document.getElementById('svgDownload');
 const svgLink = document.getElementById('svgLink');
-const stlLink = document.getElementById('stlLink');
 const convertAnother = document.getElementById('convertAnother');
 
 // Check authentication on load
@@ -152,37 +146,57 @@ function handleFileSelect(file) {
     reader.readAsDataURL(file);
 }
 
-// Parameter updates
-threshold.addEventListener('input', (e) => {
-    thresholdValue.textContent = e.target.value;
+// Parameter updates with labels
+detail.addEventListener('input', (e) => {
+    const labels = ['Low', 'Medium', 'High'];
+    detailValue.textContent = labels[e.target.value - 1];
 });
 
-height.addEventListener('input', (e) => {
-    heightValue.textContent = e.target.value;
+smoothness.addEventListener('input', (e) => {
+    const labels = ['Sharp', 'Medium', 'Smooth'];
+    smoothnessValue.textContent = labels[e.target.value - 1];
 });
 
-scale.addEventListener('input', (e) => {
-    scaleValue.textContent = e.target.value;
+contrast.addEventListener('input', (e) => {
+    const labels = ['Very Dark', 'Dark', 'Balanced', 'Light', 'Very Light'];
+    contrastValue.textContent = labels[e.target.value - 1];
 });
 
-twist.addEventListener('input', (e) => {
-    twistValue.textContent = e.target.value;
-});
+// Map simple sliders to technical parameters
+function getConversionParams() {
+    // Detail: 1=low, 2=medium, 3=high
+    const turdSizeMap = { 1: 5, 2: 2, 3: 1 }; // Low detail = more noise suppression
+
+    // Smoothness: 1=sharp, 2=medium, 3=smooth
+    const toleranceMap = { 1: 0.1, 2: 0.2, 3: 0.4 }; // Higher = smoother curves
+
+    // Contrast: 1-5 (dark to light)
+    const thresholdMap = { 1: 64, 2: 96, 3: 128, 4: 160, 5: 192 }; // Lower = more black
+
+    return {
+        threshold: thresholdMap[parseInt(contrast.value)],
+        turdSize: turdSizeMap[parseInt(detail.value)],
+        optTolerance: toleranceMap[parseInt(smoothness.value)]
+    };
+}
 
 // Convert button handler
 convertBtn.addEventListener('click', async () => {
     if (!selectedFile) return;
 
+    const params = getConversionParams();
+
     const formData = new FormData();
     formData.append('image', selectedFile);
-    formData.append('threshold', threshold.value);
-    formData.append('height', height.value);
-    formData.append('scale', scale.value);
-    formData.append('twistAngle', twist.value);
-    formData.append('saveSvg', saveSvg.checked);
-    formData.append('turdSize', '2');
+    formData.append('threshold', params.threshold);
+    formData.append('turdSize', params.turdSize);
     formData.append('optCurve', 'true');
-    formData.append('optTolerance', '0.2');
+    formData.append('optTolerance', params.optTolerance);
+    formData.append('saveSvg', 'true');
+    // Dummy 3D params (backend still needs them)
+    formData.append('height', '1');
+    formData.append('scale', '1');
+    formData.append('twistAngle', '0');
 
     // Show loading overlay
     loading.style.display = 'flex';
@@ -194,26 +208,27 @@ convertBtn.addEventListener('click', async () => {
     const successOverlay = document.getElementById('successOverlay');
 
     // Animate progress through steps
-    stepText.textContent = 'Vectorizing image...';
-    stepIcon.textContent = '🔄';
+    stepText.textContent = 'Analyzing your image...';
+    stepIcon.textContent = '🔍';
     progressFill.style.width = '10%';
 
     setTimeout(() => {
-        stepText.textContent = 'Tracing bitmap to vector paths...';
-        progressFill.style.width = '35%';
+        stepText.textContent = 'Tracing edges and shapes...';
+        stepIcon.textContent = '✏️';
+        progressFill.style.width = '40%';
     }, 800);
 
     setTimeout(() => {
-        stepText.textContent = 'Extruding to 3D geometry...';
+        stepText.textContent = 'Converting to vector paths...';
         stepIcon.textContent = '📐';
-        progressFill.style.width = '65%';
+        progressFill.style.width = '70%';
     }, 2000);
 
     setTimeout(() => {
-        stepText.textContent = 'Generating STL file...';
-        stepIcon.textContent = '🔲';
+        stepText.textContent = 'Optimizing curves...';
+        stepIcon.textContent = '✨';
         progressFill.style.width = '90%';
-    }, 3500);
+    }, 3000);
 
     try {
         const response = await fetch('/api/convert', {
@@ -223,10 +238,10 @@ convertBtn.addEventListener('click', async () => {
 
         const data = await response.json();
 
-        if (response.ok) {
+        if (response.ok && data.files.svg) {
             // Complete progress
             progressFill.style.width = '100%';
-            stepText.textContent = 'Complete!';
+            stepText.textContent = 'Vector created!';
             stepIcon.textContent = '✅';
 
             // Wait a moment then show success animation
@@ -239,16 +254,8 @@ convertBtn.addEventListener('click', async () => {
                     successOverlay.style.display = 'none';
                     results.style.display = 'block';
 
-                    if (data.files.svg) {
-                        svgDownload.style.display = 'flex';
-                        svgLink.href = data.files.svg;
-                        svgLink.download = data.files.svg.split('/').pop();
-                    } else {
-                        svgDownload.style.display = 'none';
-                    }
-
-                    stlLink.href = data.files.stl;
-                    stlLink.download = data.files.stl.split('/').pop();
+                    svgLink.href = data.files.svg;
+                    svgLink.download = data.files.svg.split('/').pop();
 
                     // Scroll to results
                     results.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -286,13 +293,10 @@ function resetForm() {
     if (progressFill) progressFill.style.width = '0%';
 
     // Reset parameters to defaults
-    threshold.value = 128;
-    thresholdValue.textContent = '128';
-    height.value = 5;
-    heightValue.textContent = '5';
-    scale.value = 1;
-    scaleValue.textContent = '1.0';
-    twist.value = 0;
-    twistValue.textContent = '0';
-    saveSvg.checked = true;
+    detail.value = 2;
+    detailValue.textContent = 'Medium';
+    smoothness.value = 2;
+    smoothnessValue.textContent = 'Medium';
+    contrast.value = 3;
+    contrastValue.textContent = 'Balanced';
 }

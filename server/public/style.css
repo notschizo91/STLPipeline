@@ -268,7 +268,15 @@ main {
     display: block;
     color: var(--text-secondary);
     font-size: 0.85rem;
-    margin-top: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
 }
 
 .checkbox-label {

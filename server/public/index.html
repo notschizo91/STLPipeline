@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STL Pipeline - PNG to 3D</title>
+    <title>Vector Converter - Image to SVG</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -23,8 +23,8 @@
     <!-- Main App -->
     <div id="app" style="display: none;">
         <header>
-            <h1>🖼️ → 🔲 STL Pipeline</h1>
-            <p>Convert PNG images to 3D printable STL files</p>
+            <h1>🖼️ → 📐 Vector Converter</h1>
+            <p>Turn any image into a clean, scalable SVG vector</p>
             <button id="logoutBtn" class="logout-btn">Logout</button>
         </header>
 
@@ -49,78 +49,66 @@
 
                 <!-- Parameters Section -->
                 <div class="parameters-section">
-                    <h3>⚙️ Parameters</h3>
+                    <h3>⚙️ Simple Settings</h3>
 
                     <div class="param-group">
-                        <label for="threshold">
-                            Threshold (0-255)
-                            <span class="param-value" id="thresholdValue">128</span>
+                        <label for="detail">
+                            Detail Level
+                            <span class="param-value" id="detailValue">Medium</span>
                         </label>
-                        <input type="range" id="threshold" min="0" max="255" value="128">
-                        <small>Lower = more black areas</small>
+                        <input type="range" id="detail" min="1" max="3" value="2" step="1">
+                        <div class="slider-labels">
+                            <span>Less Detail</span>
+                            <span>More Detail</span>
+                        </div>
+                        <small>📏 How much detail to capture from your image</small>
                     </div>
 
                     <div class="param-group">
-                        <label for="height">
-                            Extrusion Height (mm)
-                            <span class="param-value" id="heightValue">5</span>
+                        <label for="smoothness">
+                            Edge Smoothness
+                            <span class="param-value" id="smoothnessValue">Medium</span>
                         </label>
-                        <input type="range" id="height" min="1" max="50" value="5" step="0.5">
-                        <small>How tall the 3D object will be</small>
+                        <input type="range" id="smoothness" min="1" max="3" value="2" step="1">
+                        <div class="slider-labels">
+                            <span>Sharp</span>
+                            <span>Smooth</span>
+                        </div>
+                        <small>✨ Smoother edges vs. precise angles</small>
                     </div>
 
                     <div class="param-group">
-                        <label for="scale">
-                            Scale Factor
-                            <span class="param-value" id="scaleValue">1.0</span>
+                        <label for="contrast">
+                            Black & White Balance
+                            <span class="param-value" id="contrastValue">Balanced</span>
                         </label>
-                        <input type="range" id="scale" min="0.1" max="5" value="1" step="0.1">
-                        <small>Size multiplier</small>
-                    </div>
-
-                    <div class="param-group">
-                        <label for="twist">
-                            Twist Angle (degrees)
-                            <span class="param-value" id="twistValue">0</span>
-                        </label>
-                        <input type="range" id="twist" min="0" max="360" value="0" step="5">
-                        <small>Spiral twist effect</small>
-                    </div>
-
-                    <div class="param-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="saveSvg" checked>
-                            Save intermediate SVG file
-                        </label>
+                        <input type="range" id="contrast" min="1" max="5" value="3" step="1">
+                        <div class="slider-labels">
+                            <span>More Black</span>
+                            <span>More White</span>
+                        </div>
+                        <small>⚫⚪ Adjust how much black vs. white areas</small>
                     </div>
 
                     <button id="convertBtn" class="btn-primary" disabled>
-                        Convert to STL
+                        Convert to SVG
                     </button>
                 </div>
 
                 <!-- Results Section -->
                 <div id="results" class="results-section" style="display: none;">
-                    <h3>✅ Conversion Complete!</h3>
+                    <h3>✅ Your Vector is Ready!</h3>
                     <div class="result-files">
-                        <div class="file-download" id="svgDownload" style="display: none;">
-                            <span class="file-icon">📄</span>
-                            <div class="file-info">
-                                <strong>SVG File</strong>
-                                <small>Vector version</small>
-                            </div>
-                            <a id="svgLink" class="btn-download" download>Download</a>
-                        </div>
                         <div class="file-download">
-                            <span class="file-icon">🔲</span>
+                            <span class="file-icon">📐</span>
                             <div class="file-info">
-                                <strong>STL File</strong>
-                                <small>Ready for 3D printing</small>
+                                <strong>SVG Vector File</strong>
+                                <small>Scalable, infinitely resizable</small>
                             </div>
-                            <a id="stlLink" class="btn-download" download>Download</a>
+                            <a id="svgLink" class="btn-download" download>Download SVG</a>
                         </div>
                     </div>
-                    <button id="convertAnother" class="btn-secondary">Convert Another</button>
+                    <button id="convertAnother" class="btn-secondary">Convert Another Image</button>
                 </div>
 
                 <!-- Loading Overlay -->
@@ -158,7 +146,7 @@
         </main>
 
         <footer>
-            <p>Private STL Pipeline Instance | PNG → SVG → 3D → STL</p>
+            <p>Private Vector Converter | Transform Images into Scalable SVG Graphics</p>
         </footer>
     </div>
 
