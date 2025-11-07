@@ -34,9 +34,24 @@
             </div>
 
             <div id="preview" class="preview-center" style="display: none;">
-                <img id="previewImage" alt="Preview">
-                <button id="removeImage" class="btn-remove">✕ Remove</button>
-                <button id="convertBtn" class="btn-convert">Convert to SVG</button>
+                <div class="preview-grid">
+                    <div class="preview-panel">
+                        <h3 class="preview-label">Original</h3>
+                        <img id="previewImage" alt="Preview">
+                    </div>
+                    <div class="preview-panel">
+                        <h3 class="preview-label">Live Preview</h3>
+                        <div id="livePreview" class="live-preview-container">
+                            <div class="preview-placeholder">
+                                <span>Adjust sliders to preview</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="preview-actions">
+                    <button id="removeImage" class="btn-remove">✕ Remove</button>
+                    <button id="convertBtn" class="btn-convert">Finalize & Download</button>
+                </div>
             </div>
         </div>
 

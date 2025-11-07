@@ -1,5 +1,7 @@
 // State
 let selectedFile = null;
+let livePreviewTimeout = null;
+let lastConvertedSvgUrl = null;
 
 // Elements
 const dropZone = document.getElementById('dropZone');
@@ -11,6 +13,7 @@ const convertBtn = document.getElementById('convertBtn');
 
 const loading = document.getElementById('loading');
 const downloadBtn = document.getElementById('downloadBtn');
+const livePreview = document.getElementById('livePreview');
 
 // Parameter elements
 const colorModeToggle = document.getElementById('colorModeToggle');
@@ -70,20 +73,76 @@ function handleFileSelect(file) {
     reader.readAsDataURL(file);
 }
 
+// Live preview function with debouncing
+async function updateLivePreview() {
+    if (!selectedFile) return;
+
+    livePreview.innerHTML = '<div class="preview-loading">⏳ Converting...</div>';
+
+    const params = getConversionParams();
+    const formData = new FormData();
+    formData.append('image', selectedFile);
+    formData.append('colorMode', colorModeToggle.checked ? 'true' : 'false');
+    formData.append('threshold', params.threshold);
+    formData.append('turdSize', params.turdSize);
+    formData.append('optCurve', 'true');
+    formData.append('optTolerance', params.optTolerance);
+    formData.append('saveSvg', 'true');
+    formData.append('height', '1');
+    formData.append('scale', '1');
+    formData.append('twistAngle', '0');
+
+    try {
+        const response = await fetch('/api/convert', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.files.svg) {
+            // Store the SVG URL for download
+            lastConvertedSvgUrl = data.files.svg;
+
+            // Fetch and display the SVG
+            const svgResponse = await fetch(data.files.svg);
+            const svgText = await svgResponse.text();
+            livePreview.innerHTML = svgText;
+        } else {
+            livePreview.innerHTML = '<div class="preview-placeholder"><span>Conversion failed</span></div>';
+        }
+    } catch (error) {
+        console.error('Live preview error:', error);
+        livePreview.innerHTML = '<div class="preview-placeholder"><span>Preview error</span></div>';
+    }
+}
+
+function debouncedLivePreview() {
+    if (livePreviewTimeout) {
+        clearTimeout(livePreviewTimeout);
+    }
+    livePreviewTimeout = setTimeout(() => {
+        updateLivePreview();
+    }, 600); // Wait 600ms after user stops sliding
+}
+
 // Parameter updates with labels
 detail.addEventListener('input', (e) => {
     const labels = ['Low', 'Medium', 'High'];
     detailValue.textContent = labels[e.target.value - 1];
+    debouncedLivePreview();
 });
 
 smoothness.addEventListener('input', (e) => {
     const labels = ['Sharp', 'Medium', 'Smooth'];
     smoothnessValue.textContent = labels[e.target.value - 1];
+    debouncedLivePreview();
 });
 
 contrast.addEventListener('input', (e) => {
     const labels = ['Very Dark', 'Dark', 'Balanced', 'Light', 'Very Light'];
     contrastValue.textContent = labels[e.target.value - 1];
+    debouncedLivePreview();
 });
 
 // Color mode toggle handler
@@ -98,6 +157,7 @@ colorModeToggle.addEventListener('change', () => {
         labels[0].style.color = 'var(--primary)';
         labels[1].style.color = 'var(--text-secondary)';
     }
+    debouncedLivePreview();
 });
 
 // Map simple sliders to technical parameters
@@ -113,105 +173,49 @@ function getConversionParams() {
     };
 }
 
-// Convert button handler
+// Convert button handler - Finalizes and prepares download
 convertBtn.addEventListener('click', async () => {
     if (!selectedFile) return;
 
-    const params = getConversionParams();
-
-    const formData = new FormData();
-    formData.append('image', selectedFile);
-    formData.append('colorMode', colorModeToggle.checked ? 'true' : 'false');
-    formData.append('threshold', params.threshold);
-    formData.append('turdSize', params.turdSize);
-    formData.append('optCurve', 'true');
-    formData.append('optTolerance', params.optTolerance);
-    formData.append('saveSvg', 'true');
-    formData.append('height', '1');
-    formData.append('scale', '1');
-    formData.append('twistAngle', '0');
-
-    // Show loading overlay
-    loading.style.display = 'flex';
-
-    const progressFill = document.getElementById('progressFill');
-    const stepText = document.getElementById('stepText');
-    const stepIcon = document.querySelector('.step-icon');
     const successOverlay = document.getElementById('successOverlay');
 
-    // Animate progress through steps
-    stepText.textContent = 'Analyzing your image...';
-    stepIcon.textContent = '🔍';
-    progressFill.style.width = '10%';
-
-    setTimeout(() => {
-        stepText.textContent = 'Tracing edges and shapes...';
-        stepIcon.textContent = '✏️';
-        progressFill.style.width = '40%';
-    }, 800);
-
-    setTimeout(() => {
-        stepText.textContent = 'Converting to vector paths...';
-        stepIcon.textContent = '📐';
-        progressFill.style.width = '70%';
-    }, 2000);
-
-    setTimeout(() => {
-        stepText.textContent = 'Optimizing curves...';
-        stepIcon.textContent = '✨';
-        progressFill.style.width = '90%';
-    }, 3000);
-
-    try {
-        const response = await fetch('/api/convert', {
-            method: 'POST',
-            body: formData
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.files.svg) {
-            // Complete progress
-            progressFill.style.width = '100%';
-            stepText.textContent = 'Vector created!';
-            stepIcon.textContent = '✅';
-
-            // Wait a moment then show success animation
-            setTimeout(() => {
-                loading.style.display = 'none';
-                successOverlay.style.display = 'flex';
-
-                // Set up download button
-                downloadBtn.href = data.files.svg;
-                downloadBtn.download = data.files.svg.split('/').pop();
-
-                // Hide success overlay and show glowing download button
-                setTimeout(() => {
-                    successOverlay.style.display = 'none';
-
-                    // Show and illuminate the download button
-                    downloadBtn.style.display = 'inline-flex';
-                    downloadBtn.classList.remove('glow-hidden');
-                    downloadBtn.classList.add('glow-active');
-                }, 2000);
-            }, 500);
-
-        } else {
-            throw new Error(data.message || 'Conversion failed');
-        }
-    } catch (error) {
+    // If we don't have a cached preview, generate one first
+    if (!lastConvertedSvgUrl) {
+        loading.style.display = 'flex';
+        await updateLivePreview();
         loading.style.display = 'none';
-        alert('Conversion failed: ' + error.message);
-        progressFill.style.width = '0%';
     }
+
+    // Show success animation
+    successOverlay.style.display = 'flex';
+
+    // Set up download button with the last converted SVG
+    if (lastConvertedSvgUrl) {
+        downloadBtn.href = lastConvertedSvgUrl;
+        downloadBtn.download = lastConvertedSvgUrl.split('/').pop();
+    }
+
+    // Hide success overlay and show glowing download button
+    setTimeout(() => {
+        successOverlay.style.display = 'none';
+
+        // Show and illuminate the download button
+        downloadBtn.style.display = 'inline-flex';
+        downloadBtn.classList.remove('glow-hidden');
+        downloadBtn.classList.add('glow-active');
+    }, 2000);
 });
 
 function resetForm() {
     selectedFile = null;
+    lastConvertedSvgUrl = null;
     fileInput.value = '';
     preview.style.display = 'none';
     dropZone.style.display = 'block';
     loading.style.display = 'none';
+
+    // Reset live preview
+    livePreview.innerHTML = '<div class="preview-placeholder"><span>Adjust sliders to preview</span></div>';
 
     // Hide and reset download button
     downloadBtn.classList.remove('glow-active');
