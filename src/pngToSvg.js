@@ -24,28 +24,22 @@ export async function pngToSvg(inputPath, options = {}) {
       // Color mode: Use ImageTracer for full color SVG conversion
       console.log('Using color mode conversion with ImageTracer');
 
-      const imageBuffer = await fs.readFile(inputPath);
-      const base64Image = 'data:image/png;base64,' + imageBuffer.toString('base64');
-
       const svgContent = await new Promise((resolve, reject) => {
-        try {
-          const svg = ImageTracer.imagedataToSVG(
-            ImageTracer.imageToTracedata(base64Image, null, null),
-            {
-              numberofcolors: 16,
-              mincolorratio: 0.02,
-              colorquantcycles: 3,
-              ltres: 1,
-              qtres: 1,
-              pathomit: 8,
-              rightangleenhance: true,
-              ...otherOptions
-            }
-          );
-          resolve(svg);
-        } catch (err) {
-          reject(err);
-        }
+        ImageTracer.imageToSVG(
+          inputPath,
+          (svgstr) => {
+            resolve(svgstr);
+          },
+          {
+            numberofcolors: 16,
+            mincolorratio: 0.02,
+            colorquantcycles: 3,
+            ltres: 1,
+            qtres: 1,
+            pathomit: 8,
+            rightangleenhance: true
+          }
+        );
       });
 
       return svgContent;
