@@ -184,13 +184,36 @@ convertBtn.addEventListener('click', async () => {
     formData.append('optCurve', 'true');
     formData.append('optTolerance', '0.2');
 
+    // Show loading overlay
     loading.style.display = 'flex';
     convertBtn.disabled = true;
 
-    // Simulate progress steps
-    setTimeout(() => loadingStep.textContent = 'Step 1/3: Vectorizing image...', 100);
-    setTimeout(() => loadingStep.textContent = 'Step 2/3: Extruding to 3D...', 1500);
-    setTimeout(() => loadingStep.textContent = 'Step 3/3: Generating STL file...', 3000);
+    const progressFill = document.getElementById('progressFill');
+    const stepText = document.getElementById('stepText');
+    const stepIcon = document.querySelector('.step-icon');
+    const successOverlay = document.getElementById('successOverlay');
+
+    // Animate progress through steps
+    stepText.textContent = 'Vectorizing image...';
+    stepIcon.textContent = '🔄';
+    progressFill.style.width = '10%';
+
+    setTimeout(() => {
+        stepText.textContent = 'Tracing bitmap to vector paths...';
+        progressFill.style.width = '35%';
+    }, 800);
+
+    setTimeout(() => {
+        stepText.textContent = 'Extruding to 3D geometry...';
+        stepIcon.textContent = '📐';
+        progressFill.style.width = '65%';
+    }, 2000);
+
+    setTimeout(() => {
+        stepText.textContent = 'Generating STL file...';
+        stepIcon.textContent = '🔲';
+        progressFill.style.width = '90%';
+    }, 3500);
 
     try {
         const response = await fetch('/api/convert', {
@@ -201,20 +224,36 @@ convertBtn.addEventListener('click', async () => {
         const data = await response.json();
 
         if (response.ok) {
-            // Show results
-            loading.style.display = 'none';
-            results.style.display = 'block';
+            // Complete progress
+            progressFill.style.width = '100%';
+            stepText.textContent = 'Complete!';
+            stepIcon.textContent = '✅';
 
-            if (data.files.svg) {
-                svgDownload.style.display = 'flex';
-                svgLink.href = data.files.svg;
-                svgLink.download = data.files.svg.split('/').pop();
-            } else {
-                svgDownload.style.display = 'none';
-            }
+            // Wait a moment then show success animation
+            setTimeout(() => {
+                loading.style.display = 'none';
+                successOverlay.style.display = 'flex';
 
-            stlLink.href = data.files.stl;
-            stlLink.download = data.files.stl.split('/').pop();
+                // Hide success overlay and show results after animation
+                setTimeout(() => {
+                    successOverlay.style.display = 'none';
+                    results.style.display = 'block';
+
+                    if (data.files.svg) {
+                        svgDownload.style.display = 'flex';
+                        svgLink.href = data.files.svg;
+                        svgLink.download = data.files.svg.split('/').pop();
+                    } else {
+                        svgDownload.style.display = 'none';
+                    }
+
+                    stlLink.href = data.files.stl;
+                    stlLink.download = data.files.stl.split('/').pop();
+
+                    // Scroll to results
+                    results.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 2000);
+            }, 500);
 
         } else {
             throw new Error(data.message || 'Conversion failed');
@@ -223,6 +262,8 @@ convertBtn.addEventListener('click', async () => {
         loading.style.display = 'none';
         alert('Conversion failed: ' + error.message);
         convertBtn.disabled = false;
+        // Reset progress
+        progressFill.style.width = '0%';
     }
 });
 
@@ -239,6 +280,10 @@ function resetForm() {
     convertBtn.disabled = true;
     results.style.display = 'none';
     loading.style.display = 'none';
+
+    // Reset progress bar
+    const progressFill = document.getElementById('progressFill');
+    if (progressFill) progressFill.style.width = '0%';
 
     // Reset parameters to defaults
     threshold.value = 128;
