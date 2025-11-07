@@ -53,14 +53,35 @@ export async function pngToSvg(inputPath, options = {}) {
         layers.push(layerSvg);
       }
 
-      // Combine layers by merging SVG contents
-      let combinedSvg = layers[0];
-      for (let i = 1; i < layers.length; i++) {
-        const pathMatch = layers[i].match(/<path[^>]*d="[^"]+"/g);
-        if (pathMatch) {
-          combinedSvg = combinedSvg.replace('</svg>', pathMatch.join('') + '</svg>');
+      // Extract paths from all layers and combine properly
+      const allPaths = [];
+      let svgHeader = '';
+      let viewBox = '';
+
+      for (let i = 0; i < layers.length; i++) {
+        // Extract SVG header from first layer
+        if (i === 0) {
+          const headerMatch = layers[i].match(/<svg[^>]*>/);
+          if (headerMatch) {
+            svgHeader = headerMatch[0];
+            const viewBoxMatch = svgHeader.match(/viewBox="[^"]+"/);
+            if (viewBoxMatch) viewBox = viewBoxMatch[0];
+          }
+        }
+
+        // Extract all path elements properly
+        const pathMatches = layers[i].match(/<path[^>]*\/>/g);
+        if (pathMatches) {
+          allPaths.push(...pathMatches);
         }
       }
+
+      // Build proper SVG with all paths
+      const combinedSvg = `<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg" ${viewBox}>
+${allPaths.join('\n')}
+</svg>`;
 
       return combinedSvg;
     } else {
