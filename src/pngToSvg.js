@@ -23,25 +23,29 @@ export async function pngToSvg(inputPath, options = {}) {
       // Color mode: Use potrace with posterized color layers
       console.log('Using color mode conversion with multi-layer potrace');
 
+      // Process image with sharp to get metadata
+      const imageInfo = await sharp(inputPath).metadata();
+      const width = imageInfo.width;
+      const height = imageInfo.height;
+
       const layers = [];
-      const colors = ['#000000', '#555555', '#999999', '#CCCCCC'];
+      const thresholds = [50, 100, 150, 200]; // Different threshold levels
+      const colors = ['#1a1a1a', '#666666', '#999999', '#cccccc']; // Dark to light
 
-      // Process image through multiple threshold levels to create color effect
-      for (let i = 0; i < 4; i++) {
-        const layerThreshold = 64 + (i * 48); // 64, 112, 160, 208
-
+      // Create each layer
+      for (let i = 0; i < thresholds.length; i++) {
         const imageBuffer = await sharp(inputPath)
           .greyscale()
-          .normalize()
+          .normalise()
           .toBuffer();
 
-        const layerSvg = await new Promise((resolve, reject) => {
+        const svgStr = await new Promise((resolve, reject) => {
           potrace.trace(imageBuffer, {
-            threshold: layerThreshold,
-            turdSize: 1,
+            threshold: thresholds[i],
+            turdSize: 2,
             turnPolicy: potrace.Potrace.TURNPOLICY_MINORITY,
             optCurve: true,
-            optTolerance: 0.3,
+            optTolerance: 0.2,
             color: colors[i],
             background: 'transparent'
           }, (err, svg) => {
@@ -50,38 +54,26 @@ export async function pngToSvg(inputPath, options = {}) {
           });
         });
 
-        layers.push(layerSvg);
-      }
-
-      // Extract paths from all layers and combine properly
-      const allPaths = [];
-      let svgHeader = '';
-      let viewBox = '';
-
-      for (let i = 0; i < layers.length; i++) {
-        // Extract SVG header from first layer
-        if (i === 0) {
-          const headerMatch = layers[i].match(/<svg[^>]*>/);
-          if (headerMatch) {
-            svgHeader = headerMatch[0];
-            const viewBoxMatch = svgHeader.match(/viewBox="[^"]+"/);
-            if (viewBoxMatch) viewBox = viewBoxMatch[0];
-          }
-        }
-
-        // Extract all path elements properly
-        const pathMatches = layers[i].match(/<path[^>]*\/>/g);
-        if (pathMatches) {
-          allPaths.push(...pathMatches);
+        // Extract path data from this layer
+        const pathRegex = /<path[^>]*>/g;
+        const paths = svgStr.match(pathRegex);
+        if (paths && paths.length > 0) {
+          layers.push({ paths, color: colors[i] });
         }
       }
 
-      // Build proper SVG with all paths
+      // Build combined SVG with proper structure
+      let combinedPaths = '';
+      layers.reverse().forEach(layer => {
+        layer.paths.forEach(path => {
+          combinedPaths += path + '\n';
+        });
+      });
+
       const combinedSvg = `<?xml version="1.0" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
-<svg version="1.0" xmlns="http://www.w3.org/2000/svg" ${viewBox}>
-${allPaths.join('\n')}
-</svg>`;
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+${combinedPaths}</svg>`;
 
       return combinedSvg;
     } else {
