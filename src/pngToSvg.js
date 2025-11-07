@@ -20,62 +20,34 @@ export async function pngToSvg(inputPath, options = {}) {
 
   try {
     if (colorMode) {
-      // Color mode: Use potrace with posterized color layers
-      console.log('Using color mode conversion with multi-layer potrace');
+      // Color mode: Use potrace with black lines to preserve white and details
+      console.log('Using color mode conversion with black line tracing');
 
-      // Process image with sharp to get metadata
-      const imageInfo = await sharp(inputPath).metadata();
-      const width = imageInfo.width;
-      const height = imageInfo.height;
+      const defaultOptions = {
+        threshold,
+        turdSize,
+        turnPolicy: potrace.Potrace.TURNPOLICY_MINORITY,
+        optCurve,
+        optTolerance,
+        color: '#000000', // Black lines for color mode
+        background: 'transparent',
+        ...otherOptions
+      };
 
-      const layers = [];
-      const thresholds = [50, 100, 150, 200]; // Different threshold levels
-      const colors = ['#1a1a1a', '#666666', '#999999', '#cccccc']; // Dark to light
+      // Read and process the image with sharp (keep original colors, just convert format)
+      const imageBuffer = await sharp(inputPath)
+        .greyscale()
+        .toBuffer();
 
-      // Create each layer
-      for (let i = 0; i < thresholds.length; i++) {
-        const imageBuffer = await sharp(inputPath)
-          .greyscale()
-          .normalise()
-          .toBuffer();
-
-        const svgStr = await new Promise((resolve, reject) => {
-          potrace.trace(imageBuffer, {
-            threshold: thresholds[i],
-            turdSize: 2,
-            turnPolicy: potrace.Potrace.TURNPOLICY_MINORITY,
-            optCurve: true,
-            optTolerance: 0.2,
-            color: colors[i],
-            background: 'transparent'
-          }, (err, svg) => {
-            if (err) reject(err);
-            else resolve(svg);
-          });
-        });
-
-        // Extract path data from this layer
-        const pathRegex = /<path[^>]*>/g;
-        const paths = svgStr.match(pathRegex);
-        if (paths && paths.length > 0) {
-          layers.push({ paths, color: colors[i] });
-        }
-      }
-
-      // Build combined SVG with proper structure
-      let combinedPaths = '';
-      layers.reverse().forEach(layer => {
-        layer.paths.forEach(path => {
-          combinedPaths += path + '\n';
+      // Convert to SVG using potrace with black lines
+      const svgContent = await new Promise((resolve, reject) => {
+        potrace.trace(imageBuffer, defaultOptions, (err, svg) => {
+          if (err) reject(err);
+          else resolve(svg);
         });
       });
 
-      const combinedSvg = `<?xml version="1.0" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
-<svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-${combinedPaths}</svg>`;
-
-      return combinedSvg;
+      return svgContent;
     } else {
       // Black & white mode: Use Potrace for clean B&W conversion
       console.log('Using black & white mode conversion with Potrace');
