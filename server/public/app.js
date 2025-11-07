@@ -1,15 +1,7 @@
 // State
 let selectedFile = null;
-let isAuthenticated = false;
 
 // Elements
-const loginModal = document.getElementById('loginModal');
-const loginForm = document.getElementById('loginForm');
-const passwordInput = document.getElementById('passwordInput');
-const loginError = document.getElementById('loginError');
-const app = document.getElementById('app');
-const logoutBtn = document.getElementById('logoutBtn');
-
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const preview = document.getElementById('preview');
@@ -28,64 +20,6 @@ const smoothness = document.getElementById('smoothness');
 const smoothnessValue = document.getElementById('smoothnessValue');
 const contrast = document.getElementById('contrast');
 const contrastValue = document.getElementById('contrastValue');
-
-// Check authentication on load
-checkAuthStatus();
-
-// Login handler
-loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const password = passwordInput.value;
-
-    try {
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            isAuthenticated = true;
-            loginModal.style.display = 'none';
-            app.style.display = 'block';
-            loginError.textContent = '';
-        } else {
-            loginError.textContent = data.error || 'Invalid password';
-            passwordInput.value = '';
-            passwordInput.focus();
-        }
-    } catch (error) {
-        loginError.textContent = 'Login failed. Please try again.';
-    }
-});
-
-// Logout handler
-logoutBtn.addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    isAuthenticated = false;
-    app.style.display = 'none';
-    loginModal.style.display = 'flex';
-    passwordInput.value = '';
-    resetForm();
-});
-
-// Check auth status
-async function checkAuthStatus() {
-    try {
-        const response = await fetch('/api/auth/status');
-        const data = await response.json();
-
-        if (data.authenticated) {
-            isAuthenticated = true;
-            loginModal.style.display = 'none';
-            app.style.display = 'block';
-        }
-    } catch (error) {
-        console.error('Auth check failed:', error);
-    }
-}
 
 // File upload handlers
 dropZone.addEventListener('click', () => fileInput.click());

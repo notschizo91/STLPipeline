@@ -7,21 +7,8 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Login Modal -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <h2>🔒 Enter Password</h2>
-            <p>This is a private instance</p>
-            <form id="loginForm">
-                <input type="password" id="passwordInput" placeholder="Enter password" required>
-                <button type="submit">Login</button>
-            </form>
-            <div id="loginError" class="error"></div>
-        </div>
-    </div>
-
     <!-- Main App -->
-    <div id="app" class="single-screen-layout" style="display: none;">
+    <div id="app" class="single-screen-layout">
         <!-- Top Bar -->
         <div class="top-bar">
             <div class="logo">
@@ -32,7 +19,6 @@
                     <span class="download-icon">📥</span>
                     <span>Download SVG</span>
                 </a>
-                <button id="logoutBtn" class="logout-btn">Logout</button>
             </div>
         </div>
 

@@ -1,6 +1,5 @@
 import express from 'express';
 import multer from 'multer';
-import session from 'express-session';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,7 +14,6 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const PASSWORD = process.env.APP_PASSWORD || 'stl-admin-2024';
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -51,57 +49,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session middleware for authentication
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'stl-pipeline-secret-key-change-in-production',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
-
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/output', express.static(path.join(__dirname, '../output')));
 
-// Authentication middleware
-function requireAuth(req, res, next) {
-  if (req.session.authenticated) {
-    next();
-  } else {
-    res.status(401).json({ error: 'Authentication required' });
-  }
-}
-
 // Routes
 
-// Login endpoint
-app.post('/api/login', (req, res) => {
-  const { password } = req.body;
-
-  if (password === PASSWORD) {
-    req.session.authenticated = true;
-    res.json({ success: true, message: 'Login successful' });
-  } else {
-    res.status(401).json({ error: 'Invalid password' });
-  }
-});
-
-// Logout endpoint
-app.post('/api/logout', (req, res) => {
-  req.session.destroy();
-  res.json({ success: true, message: 'Logged out' });
-});
-
-// Check auth status
-app.get('/api/auth/status', (req, res) => {
-  res.json({ authenticated: !!req.session.authenticated });
-});
-
-// Convert endpoint (protected)
-app.post('/api/convert', requireAuth, upload.single('image'), async (req, res) => {
+// Convert endpoint
+app.post('/api/convert', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -174,10 +129,9 @@ app.get('/api/health', (req, res) => {
 app.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════╗
-║   STL Pipeline Server                      ║
+║   Vector Converter Server                  ║
 ╠════════════════════════════════════════════╣
 ║   URL: http://localhost:${PORT}              ║
-║   Password: ${PASSWORD.substring(0, 3)}${'*'.repeat(PASSWORD.length - 3)}                ║
 ║   Status: Running                          ║
 ╚════════════════════════════════════════════╝
   `);
