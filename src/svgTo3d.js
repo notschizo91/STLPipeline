@@ -1,9 +1,12 @@
-import { extrudeLinear } from '@jscad/modeling/src/operations/extrusions/index.js';
-import { geom2 } from '@jscad/modeling/src/geometries/index.js';
-import { vectorText } from '@jscad/modeling/src/text/index.js';
-import { serialize } from '@jscad/stl-serializer';
-import { parseSVG } from 'svg-path-parser';
+import jscadModeling from '@jscad/modeling';
+import stlSerializer from '@jscad/stl-serializer';
+import svgPathParser from 'svg-path-parser';
 import { promises as fs } from 'fs';
+
+const { extrudeLinear } = jscadModeling.extrusions;
+const { geom2 } = jscadModeling.geometries;
+const { serialize } = stlSerializer;
+const { parseSVG } = svgPathParser;
 
 /**
  * Parse SVG path data to create a 2D geometry
