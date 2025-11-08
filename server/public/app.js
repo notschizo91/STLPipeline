@@ -195,15 +195,15 @@ function getConversionParams() {
     const smoothnessValue = parseInt(smoothness.value);
     const contrastValue = parseInt(contrast.value);
 
-    // Map detail (1-10) to turdSize (10 to 0)
-    // Lower values = less detail (larger turdSize), Higher values = more detail (smaller turdSize)
-    // turdSize 0 = capture ALL details including very small lines
+    // Map detail (1-10) to turdSize (20 to 1)
+    // Lower values = less detail (larger turdSize = filter out small lines), Higher values = more detail (smaller turdSize)
+    // Larger turdSize values eliminate small/thin lines
     let turdSize;
-    if (detailValue <= 2) turdSize = 10;
-    else if (detailValue <= 4) turdSize = 5;
-    else if (detailValue <= 6) turdSize = 2;
-    else if (detailValue <= 8) turdSize = 1;
-    else turdSize = 0; // Maximum detail for values 9-10
+    if (detailValue <= 2) turdSize = 20;  // Very low detail - eliminate lots of small lines
+    else if (detailValue <= 4) turdSize = 10;
+    else if (detailValue <= 6) turdSize = 5;
+    else if (detailValue <= 8) turdSize = 2;
+    else turdSize = 1; // Maximum detail for values 9-10
 
     // Map smoothness (1-10) to optTolerance (0.1 to 0.4)
     // Lower values = sharper (less tolerance), Higher values = smoother (more tolerance)

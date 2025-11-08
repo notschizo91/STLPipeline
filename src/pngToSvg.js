@@ -109,25 +109,18 @@ export async function pngToSvg(inputPath, options = {}) {
           });
         });
 
-        // Extract paths and scale them back to original size if needed
+        // Extract paths and add stroke-width for thicker lines
         const pathRegex = /<path[^>]*>/g;
         const paths = svgStr.match(pathRegex);
 
         if (paths && paths.length > 0) {
-          // Scale paths back to original dimensions
-          let scaledPaths = paths;
-          if (processWidth !== width || processHeight !== height) {
-            const scaleX = width / processWidth;
-            const scaleY = height / processHeight;
-            scaledPaths = paths.map(path =>
-              path.replace(/d="([^"]+)"/, (match, d) => {
-                // This is a simplified scaling - potrace will handle the actual size via viewBox
-                return match;
-              })
-            );
-          }
+          // Add stroke and stroke-width to make lines thicker
+          const thickerPaths = paths.map(path => {
+            // Add stroke-width and stroke to paths
+            return path.replace('<path', '<path stroke-width="2" stroke="' + targetColor.hex + '"');
+          });
 
-          layers.push({ paths: scaledPaths, color: targetColor.hex });
+          layers.push({ paths: thickerPaths, color: targetColor.hex });
           console.log(`  Found ${paths.length} paths for ${targetColor.hex}`);
         }
       } catch (err) {
