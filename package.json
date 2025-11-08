@@ -23,6 +23,7 @@
   "dependencies": {
     "@jscad/modeling": "^2.12.0",
     "@jscad/stl-serializer": "^2.1.13",
+    "@neplex/vectorizer": "^0.0.5",
     "commander": "^11.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
