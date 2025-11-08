@@ -368,7 +368,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    overflow: auto;
     position: relative;
 }
 
@@ -377,6 +377,7 @@ body {
     max-height: 100%;
     width: auto !important;
     height: auto !important;
+    display: block;
 }
 
 .preview-placeholder {
