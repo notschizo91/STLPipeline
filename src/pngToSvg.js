@@ -47,13 +47,9 @@ export async function pngToSvg(inputPath, options = {}) {
       pathPrecision: 5
     });
 
-    // Replace fixed width/height with auto to allow CSS scaling
-    const scaledSvg = svgContent
-      .replace(/width="[^"]*"/, 'width="auto"')
-      .replace(/height="[^"]*"/, 'height="auto"');
-
     console.log(`VTracer conversion complete with filterSpeckle=${filterSpeckle}`);
-    return scaledSvg;
+    console.log(`SVG output length: ${svgContent.length} chars`);
+    return svgContent;
   } catch (error) {
     console.error('Error in pngToSvg:', error);
     throw new Error(`Failed to convert PNG to SVG: ${error.message}`);
