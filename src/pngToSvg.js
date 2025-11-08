@@ -32,19 +32,19 @@ export async function pngToSvg(inputPath, options = {}) {
     // Higher tolerance = higher length threshold (more smoothing)
     const lengthThreshold = Math.round(optTolerance * 20);
 
-    // Use VTracer's native color mode with good defaults
+    // Use VTracer's native color mode with polygon mode for better geometric shapes
     const svgContent = await vectorize(imageBuffer, {
       colorMode: ColorMode.Color,
       colorPrecision: 6,
       filterSpeckle: filterSpeckle,  // KEY: Filters out small patches/lines
       spliceThreshold: 45,
-      cornerThreshold: 60,
+      cornerThreshold: 30,  // Lower = detect more corners (better for rectangles)
       hierarchical: Hierarchical.Stacked,
-      mode: PathSimplifyMode.Spline,
+      mode: PathSimplifyMode.Polygon,  // Polygon mode preserves sharp corners better than Spline
       layerDifference: 5,
       lengthThreshold: lengthThreshold,
-      maxIterations: 2,
-      pathPrecision: 5
+      maxIterations: 10,  // More iterations for better shape fitting
+      pathPrecision: 8
     });
 
     console.log(`VTracer conversion complete with filterSpeckle=${filterSpeckle}`);
