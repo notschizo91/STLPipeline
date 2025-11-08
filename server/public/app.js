@@ -7,7 +7,6 @@ let lastConvertedSvgUrl = null;
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const preview = document.getElementById('preview');
-const previewImage = document.getElementById('previewImage');
 const removeImageBtn = document.getElementById('removeImage');
 const convertBtn = document.getElementById('convertBtn');
 
@@ -96,14 +95,11 @@ function handleFileSelect(file) {
     }
 
     selectedFile = file;
+    dropZone.style.display = 'none';
+    preview.style.display = 'block';
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        previewImage.src = e.target.result;
-        dropZone.style.display = 'none';
-        preview.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
+    // Trigger live preview immediately
+    updateLivePreview();
 }
 
 // Live preview function with debouncing
