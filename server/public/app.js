@@ -131,16 +131,20 @@ async function updateLivePreview() {
         });
 
         const data = await response.json();
+        console.log('API Response:', data);
 
-        if (response.ok && data.files.svg) {
+        if (response.ok && data.files && data.files.svg) {
             // Store the SVG URL for download
             lastConvertedSvgUrl = data.files.svg;
+            console.log('Fetching SVG from:', data.files.svg);
 
             // Fetch and display the SVG
             const svgResponse = await fetch(data.files.svg);
             const svgText = await svgResponse.text();
+            console.log('SVG text length:', svgText.length);
             livePreview.innerHTML = svgText;
         } else {
+            console.error('Invalid response or missing SVG:', data);
             livePreview.innerHTML = '<div class="preview-placeholder"><span>Conversion failed</span></div>';
         }
     } catch (error) {
