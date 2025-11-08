@@ -47,10 +47,10 @@ export async function pngToSvg(inputPath, options = {}) {
       pathPrecision: 5
     });
 
-    // Strip width and height attributes but keep everything else
+    // Replace fixed width/height with auto to allow CSS scaling
     const scaledSvg = svgContent
-      .replace(/\s+width="[^"]*"/, '')
-      .replace(/\s+height="[^"]*"/, '');
+      .replace(/width="[^"]*"/, 'width="auto"')
+      .replace(/height="[^"]*"/, 'height="auto"');
 
     console.log(`VTracer conversion complete with filterSpeckle=${filterSpeckle}`);
     return scaledSvg;
