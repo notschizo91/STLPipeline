@@ -47,12 +47,10 @@ export async function pngToSvg(inputPath, options = {}) {
       pathPrecision: 5
     });
 
-    // Remove fixed width/height from SVG to allow proper scaling in browser
-    // Keep viewBox for aspect ratio, but let CSS control display size
-    const scaledSvg = svgContent.replace(
-      /<svg([^>]*)\s+width="[^"]*"\s+height="[^"]*"/,
-      '<svg$1'
-    );
+    // Strip width and height attributes but keep everything else
+    const scaledSvg = svgContent
+      .replace(/\s+width="[^"]*"/, '')
+      .replace(/\s+height="[^"]*"/, '');
 
     console.log(`VTracer conversion complete with filterSpeckle=${filterSpeckle}`);
     return scaledSvg;
