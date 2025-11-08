@@ -134,22 +134,8 @@ async function updateLivePreview() {
             lastConvertedSvgUrl = data.files.svg;
             console.log('Fetching SVG from:', data.files.svg);
 
-            // Fetch and display the SVG
-            const svgResponse = await fetch(data.files.svg);
-            const svgText = await svgResponse.text();
-            console.log('SVG text length:', svgText.length);
-
-            // Insert SVG
-            livePreview.innerHTML = svgText;
-
-            // Force the SVG to scale properly
-            const svgElement = livePreview.querySelector('svg');
-            if (svgElement) {
-                svgElement.style.width = '100%';
-                svgElement.style.height = 'auto';
-                svgElement.style.maxWidth = '100%';
-                svgElement.style.maxHeight = '100%';
-            }
+            // Display SVG as an image - browser handles scaling automatically
+            livePreview.innerHTML = `<img src="${data.files.svg}" alt="Vector Preview" style="max-width: 100%; max-height: 100%; width: auto; height: auto;">`;
         } else {
             console.error('Invalid response or missing SVG:', data);
             livePreview.innerHTML = '<div class="preview-placeholder"><span>Conversion failed</span></div>';
