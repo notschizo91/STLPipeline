@@ -138,7 +138,18 @@ async function updateLivePreview() {
             const svgResponse = await fetch(data.files.svg);
             const svgText = await svgResponse.text();
             console.log('SVG text length:', svgText.length);
+
+            // Insert SVG
             livePreview.innerHTML = svgText;
+
+            // Force the SVG to scale properly
+            const svgElement = livePreview.querySelector('svg');
+            if (svgElement) {
+                svgElement.style.width = '100%';
+                svgElement.style.height = 'auto';
+                svgElement.style.maxWidth = '100%';
+                svgElement.style.maxHeight = '100%';
+            }
         } else {
             console.error('Invalid response or missing SVG:', data);
             livePreview.innerHTML = '<div class="preview-placeholder"><span>Conversion failed</span></div>';
