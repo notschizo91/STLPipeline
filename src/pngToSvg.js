@@ -47,15 +47,9 @@ export async function pngToSvg(inputPath, options = {}) {
       pathPrecision: 5
     });
 
-    // Strip width and height attributes so CSS can control the size
-    // Keep viewBox for proper aspect ratio
-    const scaledSvg = svgContent
-      .replace(/\swidth="[^"]*"/, '')
-      .replace(/\sheight="[^"]*"/, '');
-
     console.log(`VTracer conversion complete with filterSpeckle=${filterSpeckle}`);
-    console.log(`SVG output length: ${scaledSvg.length} chars`);
-    return scaledSvg;
+    console.log(`SVG output length: ${svgContent.length} chars`);
+    return svgContent;
   } catch (error) {
     console.error('Error in pngToSvg:', error);
     throw new Error(`Failed to convert PNG to SVG: ${error.message}`);
