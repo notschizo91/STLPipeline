@@ -252,8 +252,9 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 2rem;
-    overflow: hidden;
+    padding: 1rem 2rem;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .drop-zone-center {
@@ -307,11 +308,12 @@ body {
 
 .preview-center {
     text-align: center;
-    max-width: 900px;
+    max-width: 1000px;
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 2rem;
+    padding: 1rem 0;
 }
 
 .preview-label {
@@ -325,7 +327,7 @@ body {
 }
 
 .single-preview-container {
-    height: 600px;
+    height: 500px;
     border-radius: 1rem;
     border: 1px solid rgba(0, 217, 255, 0.3);
     background: rgba(240, 248, 255, 0.95);
@@ -357,7 +359,8 @@ body {
 .preview-actions {
     display: flex;
     justify-content: center;
-    gap: 1rem;
+    gap: 1.5rem;
+    margin-top: 0.5rem;
 }
 
 .btn-remove {
@@ -423,7 +426,7 @@ body {
     border-top: 1px solid rgba(0, 217, 255, 0.3);
     box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 217, 255, 0.1);
     padding: 1.5rem 3rem;
-    height: 180px;
+    height: 160px;
     flex-shrink: 0;
 }
 
